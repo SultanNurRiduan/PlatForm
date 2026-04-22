@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8080/PlatForm/api-toko/get_barang.php';
+const API_URL = 'http://localhost/PlatForm/api-toko/get_barang.php';
 
 let dataBarangGlobal = [];
 
@@ -136,4 +136,20 @@ function tampilkanError(pesan) {
     document.getElementById('pesan-error').classList.remove('hidden');
 }
 
+// ============================================================
+// REGISTRASI SERVICE WORKER (PWA)
+// ============================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+                console.log('[App] Service Worker berhasil didaftarkan! Scope:', registration.scope);
+            })
+            .catch(err => {
+                console.error('[App] Service Worker gagal didaftarkan:', err);
+            });
+    });
+}
+
+// Jalankan pengambilan data saat halaman dimuat
 ambilDataBarang();

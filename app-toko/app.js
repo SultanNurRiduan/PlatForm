@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost/PlatForm/api-toko/get_barang.php';
+const API_URL = 'http://platform.test:8080/api-toko/get_barang.php';
 
 let dataBarangGlobal = [];
 

@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Aplikasi Toko</title>
 
-    <!-- PWA: Manifest & Theme Color -->
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#10b981" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AppToko" />
-    <link rel="apple-touch-icon" href="icons/kontolkecil.png" />
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -113,21 +111,31 @@
             </div>
         </div>
 
-        <!-- JUDUL + SEARCH -->
+        <!-- JUDUL + SEARCH + TOMBOL TAMBAH -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
             <div>
                 <h2 class="text-xl font-extrabold text-slate-800">Daftar Barang</h2>
                 <p class="text-sm text-slate-400 mt-0.5">Data langsung dari Backend API</p>
             </div>
-            <div class="relative w-full sm:w-64">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size:13px;"></i>
-                <input
-                    id="input-cari"
-                    type="text"
-                    placeholder="Cari nama barang..."
-                    oninput="filterTabel()"
-                    class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
-                />
+            <div class="flex items-center gap-3">
+                <div class="relative w-full sm:w-56">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size:13px;"></i>
+                    <input
+                        id="input-cari"
+                        type="text"
+                        placeholder="Cari nama barang..."
+                        oninput="filterTabel()"
+                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+                    />
+                </div>
+                <!-- TOMBOL KE HALAMAN TAMBAH -->
+                <a
+                    href="tambah.html"
+                    class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-all duration-150 whitespace-nowrap"
+                >
+                    <i class="fa-solid fa-plus" style="font-size:12px;"></i>
+                    Tambah
+                </a>
             </div>
         </div>
 

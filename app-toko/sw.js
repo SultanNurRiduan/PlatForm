@@ -1,13 +1,14 @@
-const CACHE_NAME = 'toko-pwa-v1';
+const CACHE_NAME = 'toko-pwa-v2';
 const urlsToCache = [
   './',
   './index.html',
+  './tambah.html',
   './app.js',
   './manifest.json'
 ];
 
 // ============================================================
-// 1. TAHAP INSTALL: Simpan file-file penting ke Cache Browser
+// 1. INSTALL: Simpan file-file penting ke Cache Browser
 // ============================================================
 self.addEventListener('install', event => {
   console.log('[SW] Install event dipicu');
@@ -19,14 +20,13 @@ self.addEventListener('install', event => {
       })
       .then(() => {
         console.log('[SW] Semua file berhasil di-cache!');
-        // Langsung aktif tanpa menunggu tab lama ditutup
         return self.skipWaiting();
       })
   );
 });
 
 // ============================================================
-// 2. TAHAP ACTIVATE: Hapus cache lama jika ada versi baru
+// 2. ACTIVATE: Hapus cache lama jika ada versi baru
 // ============================================================
 self.addEventListener('activate', event => {
   console.log('[SW] Activate event dipicu');
@@ -41,35 +41,40 @@ self.addEventListener('activate', event => {
           })
       );
     }).then(() => {
-      // Langsung klaim semua halaman yang terbuka
       return self.clients.claim();
     })
   );
 });
 
 // ============================================================
-// 3. TAHAP FETCH: Sajikan dari Cache, fallback ke Network
-// Strategi: Cache First → Network Fallback
+// 3. FETCH: Network First untuk API, Cache First untuk aset
 // ============================================================
 self.addEventListener('fetch', event => {
   // Hanya tangani request GET
   if (event.request.method !== 'GET') return;
 
+  // Untuk request ke API → selalu ambil dari network (data selalu fresh)
+  if (event.request.url.includes('platform.test')) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        console.warn('[SW] API tidak tersedia (offline):', event.request.url);
+      })
+    );
+    return;
+  }
+
+  // Untuk aset statis → Cache First, fallback ke network
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        // Jika ada di cache → langsung kembalikan dari cache
         if (cachedResponse) {
           console.log('[SW] Melayani dari cache:', event.request.url);
           return cachedResponse;
         }
 
-        // Jika tidak ada di cache → ambil dari network
         console.log('[SW] Mengambil dari network:', event.request.url);
         return fetch(event.request)
           .then(networkResponse => {
-            // Simpan response baru ke cache untuk berikutnya
-            // (hanya untuk request yang sukses)
             if (networkResponse && networkResponse.status === 200) {
               const responseToCache = networkResponse.clone();
               caches.open(CACHE_NAME).then(cache => {
@@ -79,7 +84,6 @@ self.addEventListener('fetch', event => {
             return networkResponse;
           })
           .catch(() => {
-            // Jika network juga gagal (offline), tampilkan fallback
             console.warn('[SW] Network gagal, aset tidak tersedia offline:', event.request.url);
           });
       })

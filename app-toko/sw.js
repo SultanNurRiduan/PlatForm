@@ -1,8 +1,7 @@
-const CACHE_NAME = 'toko-pwa-v2';
+const CACHE_NAME = 'toko-pwa-v3';
 const urlsToCache = [
   './',
   './index.html',
-  './tambah.html',
   './app.js',
   './manifest.json'
 ];

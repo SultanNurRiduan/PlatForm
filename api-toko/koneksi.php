@@ -1,9 +1,4 @@
 <?php
-
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-
-// Deklarasi parameter koneksi
 $host = "localhost";
 $user = "root";
 $pass = "root";
@@ -12,7 +7,10 @@ $db   = "toko_db";
 $koneksi = mysqli_connect($host, $user, $pass, $db);
 
 if (!$koneksi) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+    http_response_code(500);
+    die(json_encode([
+        "status" => "error",
+        "pesan"  => "Koneksi database gagal: " . mysqli_connect_error()
+    ]));
 }
-
 ?>

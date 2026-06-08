@@ -1,16 +1,97 @@
-const API_URL    = 'https://sultannurriduankriptografi.infinityfreeapp.com/PlatForm/api-toko/get_barang.php';
-const API_TAMBAH = 'https://sultannurriduankriptografi.infinityfreeapp.com/PlatForm/api-toko/tambah_barang.php';
-const API_HAPUS  = 'https://sultannurriduankriptografi.infinityfreeapp.com/PlatForm/api-toko/hapus_barang.php';
-const API_EDIT   = 'https://sultannurriduankriptografi.infinityfreeapp.com/PlatForm/api-toko/edit_barang.php';
+// ============================================================
+// CONFIG — URL API (production HTTPS)
+// ============================================================
+const API_URL    = 'http://platform.test:8080/api-toko/get_barang.php';
+const API_TAMBAH = 'http://platform.test:8080/api-toko/tambah_barang.php';
+const API_HAPUS  = 'http://platform.test:8080/api-toko/hapus_barang.php';
+const API_EDIT   = 'http://platform.test:8080/api-toko/edit_barang.php';
 
+// ============================================================
+// AUTH — Token opsional (hanya dibutuhkan untuk CRUD)
+// Dashboard bisa dibuka tanpa login, data tetap tampil.
+// ============================================================
+const TOKEN    = localStorage.getItem('token_toko');
+const USERNAME = localStorage.getItem('username_toko');
+
+// ============================================================
+// INIT saat DOM siap
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    updateHeaderAuth();
+    ambilDataBarang();
+});
+
+// ============================================================
+// UPDATE HEADER & UI berdasarkan status login
+// ============================================================
+function updateHeaderAuth() {
+    const infoUser    = document.getElementById('info-user');
+    const labelUsername = document.getElementById('label-username');
+    const btnLogout   = document.getElementById('btn-logout');
+    const btnLogin    = document.getElementById('btn-login');
+    const btnTambah   = document.getElementById('btn-tambah');
+    const bannerTamu  = document.getElementById('banner-tamu');
+    const thAksi      = document.getElementById('th-aksi');
+
+    if (TOKEN && USERNAME) {
+        // ── Sudah login ──────────────────────────────────────
+        if (labelUsername) labelUsername.textContent = USERNAME;
+        if (infoUser)  infoUser.classList.replace('hidden', 'flex');
+        if (btnLogout) btnLogout.classList.replace('hidden', 'flex');
+        if (btnLogin)  btnLogin.classList.add('hidden');
+        if (btnTambah) btnTambah.classList.replace('hidden', 'flex');
+        if (bannerTamu) bannerTamu.classList.add('hidden');
+        if (thAksi)    thAksi.classList.remove('hidden');
+    } else {
+        // ── Belum login ──────────────────────────────────────
+        if (labelUsername) labelUsername.textContent = 'Tamu';
+        if (infoUser)  infoUser.classList.add('hidden');
+        if (btnLogout) btnLogout.classList.add('hidden');
+        if (btnLogin)  btnLogin.classList.remove('hidden');
+        if (btnTambah) btnTambah.classList.add('hidden');
+        if (bannerTamu) bannerTamu.classList.remove('hidden');
+        if (thAksi)    thAksi.classList.add('hidden');
+    }
+}
+
+// ── Logout ──────────────────────────────────────────────────
+function logout() {
+    localStorage.removeItem('token_toko');
+    localStorage.removeItem('username_toko');
+    window.location.reload();
+}
+
+// ── Helper: header dengan token ─────────────────────────────
+function authHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': TOKEN || ''
+    };
+}
+
+// ── Cek login sebelum CRUD, redirect kalau belum ─────────────
+function pastikanLogin() {
+    if (!TOKEN) {
+        tampilkanToast('error', 'Silakan login terlebih dahulu!');
+        setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        return false;
+    }
+    return true;
+}
+
+// ============================================================
+// DATA GLOBAL
+// ============================================================
 let dataBarangGlobal = [];
 
 // ============================================================
-// GET — Ambil data dari server
+// GET — Ambil data (TIDAK perlu login)
 // ============================================================
 async function ambilDataBarang() {
     try {
+        // Tidak kirim token — endpoint GET sudah publik
         const response = await fetch(API_URL);
+
         if (!response.ok) throw new Error(`HTTP Error: Status ${response.status}`);
 
         const hasil = await response.json();
@@ -19,8 +100,9 @@ async function ambilDataBarang() {
             renderTabel(dataBarangGlobal);
             updateStatistik(dataBarangGlobal);
             updateStatusBadge(true, dataBarangGlobal.length);
+            document.getElementById('pesan-error').classList.add('hidden');
         } else {
-            throw new Error(hasil.message || 'Respons dari server tidak valid.');
+            throw new Error(hasil.message || hasil.pesan || 'Respons tidak valid.');
         }
     } catch (error) {
         tampilkanError(error.message);
@@ -30,9 +112,11 @@ async function ambilDataBarang() {
 }
 
 // ============================================================
-// POST — Simpan barang baru
+// POST — Tambah barang (PERLU login)
 // ============================================================
 async function simpanBarang() {
+    if (!pastikanLogin()) return;
+
     const nama  = document.getElementById('modal-input-nama').value.trim();
     const harga = document.getElementById('modal-input-harga').value;
 
@@ -51,9 +135,16 @@ async function simpanBarang() {
     try {
         const response = await fetch(API_TAMBAH, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({ nama_barang: nama, harga: Number(harga) })
         });
+
+        if (response.status === 401) {
+            tutupModal();
+            tampilkanToast('error', 'Sesi habis, silakan login ulang.');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            return;
+        }
         if (!response.ok) throw new Error(`HTTP Error: Status ${response.status}`);
 
         const hasil = await response.json();
@@ -76,16 +167,17 @@ async function simpanBarang() {
 }
 
 // ============================================================
-// POST + _method=PUT — Edit barang via modal
+// EDIT — Buka modal edit (PERLU login)
 // ============================================================
 function bukaModalEdit(id) {
+    if (!pastikanLogin()) return;
+
     const barang = dataBarangGlobal.find(b => String(b.id) === String(id));
     if (!barang) return;
 
     document.getElementById('edit-input-id').value    = barang.id;
     document.getElementById('edit-input-nama').value  = barang.nama_barang;
     document.getElementById('edit-input-harga').value = barang.harga;
-
     document.getElementById('edit-error-nama').classList.add('hidden');
     document.getElementById('edit-error-harga').classList.add('hidden');
 
@@ -96,12 +188,13 @@ function bukaModalEdit(id) {
 function tutupModalEdit() {
     document.getElementById('modal-edit-overlay').classList.remove('modal-open');
 }
-
 function tutupModalEditLuar(event) {
     if (event.target === document.getElementById('modal-edit-overlay')) tutupModalEdit();
 }
 
 async function simpanEdit() {
+    if (!pastikanLogin()) return;
+
     const id    = document.getElementById('edit-input-id').value;
     const nama  = document.getElementById('edit-input-nama').value.trim();
     const harga = Number(document.getElementById('edit-input-harga').value);
@@ -119,16 +212,21 @@ async function simpanEdit() {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
 
     try {
-        // InfinityFree memblokir PUT — gunakan POST + _method=PUT
         const response = await fetch(API_EDIT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({ _method: 'PUT', id: Number(id), nama_barang: nama, harga })
         });
+
+        if (response.status === 401) {
+            tutupModalEdit();
+            tampilkanToast('error', 'Sesi habis, silakan login ulang.');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            return;
+        }
         if (!response.ok) throw new Error(`HTTP Error: Status ${response.status}`);
 
         const hasil = await response.json();
-
         if (hasil.status === 'sukses') {
             const idx = dataBarangGlobal.findIndex(b => String(b.id) === String(id));
             if (idx !== -1) {
@@ -152,9 +250,10 @@ async function simpanEdit() {
 }
 
 // ============================================================
-// POST + _method=DELETE — Hapus barang
+// HAPUS (PERLU login)
 // ============================================================
-async function hapusBarang(id_target, nama_target) {
+function hapusBarang(id_target, nama_target) {
+    if (!pastikanLogin()) return;
     bukaModalKonfirmasi(id_target, nama_target);
 }
 
@@ -168,12 +267,17 @@ async function eksekusiHapus(id_target) {
     }
 
     try {
-        // InfinityFree memblokir DELETE — gunakan POST + _method=DELETE
         const response = await fetch(API_HAPUS, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ _method: 'DELETE', id: id_target })
+            headers: authHeaders(),
+            body: JSON.stringify({ _method: 'DELETE', id: Number(id_target) })
         });
+
+        if (response.status === 401) {
+            tampilkanToast('error', 'Sesi habis, silakan login ulang.');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            return;
+        }
         if (!response.ok) throw new Error(`HTTP Error: Status ${response.status}`);
 
         const hasil = await response.json();
@@ -192,24 +296,11 @@ async function eksekusiHapus(id_target) {
 }
 
 // ============================================================
-// MODAL KONFIRMASI HAPUS
-// ============================================================
-function bukaModalKonfirmasi(id, nama) {
-    document.getElementById('konfirmasi-nama-barang').textContent = nama;
-    document.getElementById('konfirmasi-btn-hapus').setAttribute('data-konfirmasi-id', id);
-    document.getElementById('modal-konfirmasi-overlay').classList.add('modal-open');
-}
-function tutupModalKonfirmasi() {
-    document.getElementById('modal-konfirmasi-overlay').classList.remove('modal-open');
-}
-function tutupModalKonfirmasiLuar(event) {
-    if (event.target === document.getElementById('modal-konfirmasi-overlay')) tutupModalKonfirmasi();
-}
-
-// ============================================================
-// MODAL TAMBAH
+// MODAL TAMBAH — cek login saat buka
 // ============================================================
 function bukaModal() {
+    if (!pastikanLogin()) return;
+
     document.getElementById('modal-input-nama').value  = '';
     document.getElementById('modal-input-harga').value = '';
     document.getElementById('modal-error-nama').classList.add('hidden');
@@ -224,16 +315,29 @@ function tutupModalLuar(event) {
     if (event.target === document.getElementById('modal-overlay')) tutupModal();
 }
 
-// Keyboard shortcut global
+// ── Modal konfirmasi hapus ───────────────────────────────────
+function bukaModalKonfirmasi(id, nama) {
+    document.getElementById('konfirmasi-nama-barang').textContent = nama;
+    document.getElementById('konfirmasi-btn-hapus').setAttribute('data-konfirmasi-id', id);
+    document.getElementById('modal-konfirmasi-overlay').classList.add('modal-open');
+}
+function tutupModalKonfirmasi() {
+    document.getElementById('modal-konfirmasi-overlay').classList.remove('modal-open');
+}
+function tutupModalKonfirmasiLuar(event) {
+    if (event.target === document.getElementById('modal-konfirmasi-overlay')) tutupModalKonfirmasi();
+}
+
+// ── Keyboard shortcut ────────────────────────────────────────
 document.addEventListener('keydown', function (e) {
     const modalTambahOpen     = document.getElementById('modal-overlay').classList.contains('modal-open');
     const modalEditOpen       = document.getElementById('modal-edit-overlay').classList.contains('modal-open');
     const modalKonfirmasiOpen = document.getElementById('modal-konfirmasi-overlay').classList.contains('modal-open');
 
     if (e.key === 'Escape') {
-        if (modalTambahOpen)     tutupModal();
-        if (modalEditOpen)       tutupModalEdit();
         if (modalKonfirmasiOpen) tutupModalKonfirmasi();
+        else if (modalEditOpen)  tutupModalEdit();
+        else if (modalTambahOpen) tutupModal();
     }
     if (e.key === 'Enter') {
         if (modalTambahOpen) simpanBarang();
@@ -245,6 +349,31 @@ document.addEventListener('keydown', function (e) {
 // RENDER TABEL
 // ============================================================
 function buatIsiBarisHTML(barang, hargaFormatted) {
+    const sudahLogin = !!TOKEN;
+
+    // Kolom aksi hanya dirender jika sudah login
+    const kolomAksi = sudahLogin
+        ? `<td class="px-6 py-4 text-center">
+               <div class="flex items-center justify-center gap-1.5">
+                   <button
+                       onclick="bukaModalEdit(${barang.id})"
+                       title="Edit ${escapeHtml(barang.nama_barang)}"
+                       class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-400 hover:text-sky-600 flex items-center justify-center transition-all duration-150"
+                   >
+                       <i class="fa-solid fa-pen" style="font-size:12px;"></i>
+                   </button>
+                   <button
+                       onclick="hapusBarang(${barang.id}, '${escapeHtml(barang.nama_barang).replace(/'/g, "\\'")}')"
+                       data-hapus-id="${barang.id}"
+                       title="Hapus ${escapeHtml(barang.nama_barang)}"
+                       class="btn-hapus w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 active:scale-95 text-red-400 hover:text-red-600 flex items-center justify-center transition-all duration-150"
+                   >
+                       <i class="fa-solid fa-trash" style="font-size:12px;"></i>
+                   </button>
+               </div>
+           </td>`
+        : ''; // Tidak ada kolom aksi jika belum login
+
     return `
         <td class="px-6 py-4 text-slate-400 font-mono text-xs">${barang.id}</td>
         <td class="px-6 py-4 font-semibold text-slate-700">
@@ -255,25 +384,7 @@ function buatIsiBarisHTML(barang, hargaFormatted) {
                 <i class="fa-solid fa-coins mr-1 text-emerald-400" style="font-size:11px;"></i>Rp ${hargaFormatted}
             </span>
         </td>
-        <td class="px-6 py-4 text-center">
-            <div class="flex items-center justify-center gap-1.5">
-                <button
-                    onclick="bukaModalEdit(${barang.id})"
-                    title="Edit ${escapeHtml(barang.nama_barang)}"
-                    class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-400 hover:text-sky-600 flex items-center justify-center transition-all duration-150"
-                >
-                    <i class="fa-solid fa-pen" style="font-size:12px;"></i>
-                </button>
-                <button
-                    onclick="hapusBarang(${barang.id}, '${escapeHtml(barang.nama_barang).replace(/'/g, "\\'")}')"
-                    data-hapus-id="${barang.id}"
-                    title="Hapus ${escapeHtml(barang.nama_barang)}"
-                    class="btn-hapus w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 active:scale-95 text-red-400 hover:text-red-600 flex items-center justify-center transition-all duration-150"
-                >
-                    <i class="fa-solid fa-trash" style="font-size:12px;"></i>
-                </button>
-            </div>
-        </td>
+        ${kolomAksi}
     `;
 }
 
@@ -286,9 +397,10 @@ function renderTabel(data) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
+        const colspan = TOKEN ? 4 : 3;
         tbody.innerHTML = `
             <tr>
-                <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                <td colspan="${colspan}" class="px-6 py-12 text-center text-slate-400">
                     <div class="mb-3"><i class="fa-solid fa-box-open text-4xl text-slate-200"></i></div>
                     <p class="font-semibold">Tidak ada barang ditemukan.</p>
                 </td>
@@ -366,9 +478,10 @@ function updateStatusBadge(berhasil, jumlah = 0) {
 // PESAN ERROR
 // ============================================================
 function tampilkanError(pesan) {
+    const colspan = TOKEN ? 4 : 3;
     document.getElementById('tabel-barang').innerHTML = `
         <tr>
-            <td colspan="4" class="px-6 py-10 text-center text-slate-300 text-sm">
+            <td colspan="${colspan}" class="px-6 py-10 text-center text-slate-300 text-sm">
                 <i class="fa-solid fa-plug-circle-xmark text-2xl mb-2 block"></i>
                 Tidak ada data untuk ditampilkan.
             </td>
@@ -378,7 +491,7 @@ function tampilkanError(pesan) {
 }
 
 // ============================================================
-// TOAST NOTIFICATION
+// TOAST
 // ============================================================
 let toastTimer;
 function tampilkanToast(tipe, pesan) {
@@ -409,7 +522,7 @@ function tampilkanToast(tipe, pesan) {
 }
 
 // ============================================================
-// UTILITY — Escape HTML untuk mencegah XSS
+// UTILITY
 // ============================================================
 function escapeHtml(str) {
     return String(str)
@@ -426,12 +539,7 @@ function escapeHtml(str) {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('[App] SW registered. Scope:', reg.scope))
+            .then(reg => console.log('[App] SW registered:', reg.scope))
             .catch(err => console.error('[App] SW failed:', err));
     });
 }
-
-// ============================================================
-// INIT
-// ============================================================
-ambilDataBarang();

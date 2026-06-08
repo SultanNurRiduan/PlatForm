@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login — AppToko</title>
+
+    <link rel="manifest" href="manifest.json"/>
+    <meta name="theme-color" content="#10b981"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-title" content="AppToko"/>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        .input-field {
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid #e2e8f0; border-radius: 12px;
+            font-size: 0.9rem; color: #1e293b; background: #f8fafc;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            outline: none; box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .input-field:focus {
+            border-color: #10b981; background: white;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+        }
+        .input-field::placeholder { color: #94a3b8; }
+
+        .panel { display: none; }
+        .panel.aktif { display: block; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .panel.aktif .card-wrap {
+            animation: fadeUp 0.35s cubic-bezier(.34,1.56,.64,1) both;
+        }
+
+        /* BG animated blobs */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            animation: blobMove 8s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes blobMove {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(30px, 20px) scale(1.1); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-sky-50 min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+
+    <!-- Decorative blobs -->
+    <div class="blob w-72 h-72 bg-emerald-300 top-[-60px] left-[-60px]"></div>
+    <div class="blob w-64 h-64 bg-teal-300 bottom-[-40px] right-[-40px]" style="animation-delay:2s;"></div>
+    <div class="blob w-48 h-48 bg-sky-300 top-[40%] right-[10%]" style="animation-delay:4s;"></div>
+
+    <!-- ===== PANEL LOGIN ===== -->
+    <div id="panel-login" class="panel aktif w-full max-w-sm relative z-10">
+        <div class="card-wrap bg-white rounded-2xl overflow-hidden shadow-xl border border-slate-100">
+
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-7 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:26px;"></i>
+                </div>
+                <h2 class="text-white font-extrabold text-xl leading-tight">AppToko</h2>
+                <p class="text-emerald-100 text-sm mt-1">Masuk untuk mengelola inventaris</p>
+            </div>
+
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-user mr-1 text-emerald-400"></i>Username
+                    </label>
+                    <input id="login-username" type="text" placeholder="Masukkan username..." class="input-field" autocomplete="username"/>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-key mr-1 text-emerald-400"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input id="login-password" type="password" placeholder="Masukkan password..." class="input-field pr-11" autocomplete="current-password"/>
+                        <button type="button" onclick="togglePass('login-password','icon-lp')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                            <i id="icon-lp" class="fa-solid fa-eye" style="font-size:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-500 text-xs rounded-xl px-4 py-2.5">
+                    <i class="fa-solid fa-circle-exclamation mr-1.5"></i><span id="login-error-teks"></span>
+                </div>
+            </div>
+
+            <div class="px-6 pb-6 space-y-3">
+                <button id="login-btn" onclick="prosesLogin()"
+                    class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Masuk
+                </button>
+                <button onclick="tampilPanel('register')"
+                    class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all">
+                    Belum punya akun? <span class="text-emerald-600 font-bold">Daftar</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== PANEL REGISTER ===== -->
+    <div id="panel-register" class="panel w-full max-w-sm relative z-10">
+        <div class="card-wrap bg-white rounded-2xl overflow-hidden shadow-xl border border-slate-100">
+
+            <div class="bg-gradient-to-r from-sky-500 to-blue-500 px-6 py-7 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-user-plus text-white" style="font-size:22px;"></i>
+                </div>
+                <h2 class="text-white font-extrabold text-xl leading-tight">Buat Akun Baru</h2>
+                <p class="text-sky-100 text-sm mt-1">Daftar untuk mulai menggunakan toko</p>
+            </div>
+
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-user mr-1 text-sky-400"></i>Username
+                    </label>
+                    <input id="reg-username" type="text" placeholder="Min. 3 karakter (huruf, angka, _)" class="input-field" autocomplete="off"/>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-key mr-1 text-sky-400"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input id="reg-password" type="password" placeholder="Min. 6 karakter" class="input-field pr-11" autocomplete="new-password"/>
+                        <button type="button" onclick="togglePass('reg-password','icon-rp')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                            <i id="icon-rp" class="fa-solid fa-eye" style="font-size:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-shield-halved mr-1 text-sky-400"></i>Konfirmasi Password
+                    </label>
+                    <div class="relative">
+                        <input id="reg-konfirm" type="password" placeholder="Ulangi password..." class="input-field pr-11" autocomplete="new-password"/>
+                        <button type="button" onclick="togglePass('reg-konfirm','icon-rk')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                            <i id="icon-rk" class="fa-solid fa-eye" style="font-size:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="reg-error" class="hidden bg-red-50 border border-red-200 text-red-500 text-xs rounded-xl px-4 py-2.5">
+                    <i class="fa-solid fa-circle-exclamation mr-1.5"></i><span id="reg-error-teks"></span>
+                </div>
+                <div id="reg-success" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-xl px-4 py-2.5">
+                    <i class="fa-solid fa-circle-check mr-1.5"></i><span id="reg-success-teks"></span>
+                </div>
+            </div>
+
+            <div class="px-6 pb-6 space-y-3">
+                <button id="reg-btn" onclick="prosesRegister()"
+                    class="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Daftar Sekarang
+                </button>
+                <button onclick="tampilPanel('login')"
+                    class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all">
+                    Sudah punya akun? <span class="text-sky-600 font-bold">Masuk</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIG — Ganti dengan URL production saat deploy
+        // ============================================================
+        const API_LOGIN    = 'http://platform.test:8080/api-toko/login.php';
+        const API_REGISTER = 'http://platform.test:8080/api-toko/register.php';
+
+        // Jika sudah login, langsung ke index
+        if (localStorage.getItem('token_toko')) {
+            window.location.href = 'index.html';
+        }
+
+        // ── Panel switching ────────────────────────────────
+        function tampilPanel(nama) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('aktif'));
+            document.getElementById('panel-' + nama).classList.add('aktif');
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('reg-error').classList.add('hidden');
+            document.getElementById('reg-success').classList.add('hidden');
+            const focusId = nama === 'login' ? 'login-username' : 'reg-username';
+            setTimeout(() => document.getElementById(focusId).focus(), 50);
+        }
+
+        // ── Toggle show/hide password ──────────────────────
+        function togglePass(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon  = document.getElementById(iconId);
+            input.type     = input.type === 'password' ? 'text' : 'password';
+            icon.className = input.type === 'password'
+                ? 'fa-solid fa-eye'
+                : 'fa-solid fa-eye-slash';
+        }
+
+        // ── LOGIN ──────────────────────────────────────────
+        async function prosesLogin() {
+            const username  = document.getElementById('login-username').value.trim();
+            const password  = document.getElementById('login-password').value;
+            const errorEl   = document.getElementById('login-error');
+            const errorTeks = document.getElementById('login-error-teks');
+            const btn       = document.getElementById('login-btn');
+
+            errorEl.classList.add('hidden');
+
+            if (!username || !password) {
+                errorTeks.textContent = 'Username dan password wajib diisi.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled  = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi...`;
+
+            try {
+                const res   = await fetch(API_LOGIN, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                const hasil = await res.json();
+
+                if (hasil.status === 'success') {
+                    localStorage.setItem('token_toko',    hasil.token);
+                    localStorage.setItem('username_toko', hasil.username);
+                    window.location.href = 'index.html';
+                } else {
+                    errorTeks.textContent = hasil.pesan || 'Login gagal.';
+                    errorEl.classList.remove('hidden');
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-password').focus();
+                }
+            } catch (err) {
+                errorTeks.textContent = 'Koneksi ke server gagal. Periksa URL API.';
+                errorEl.classList.remove('hidden');
+                console.error('[Login]', err);
+            } finally {
+                btn.disabled  = false;
+                btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Masuk`;
+            }
+        }
+
+        // ── REGISTER ───────────────────────────────────────
+        async function prosesRegister() {
+            const username  = document.getElementById('reg-username').value.trim();
+            const password  = document.getElementById('reg-password').value;
+            const konfirm   = document.getElementById('reg-konfirm').value;
+            const errorEl   = document.getElementById('reg-error');
+            const errorTeks = document.getElementById('reg-error-teks');
+            const successEl = document.getElementById('reg-success');
+            const successTeks = document.getElementById('reg-success-teks');
+            const btn       = document.getElementById('reg-btn');
+
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            // Validasi sisi klien
+            if (!username || !password || !konfirm) {
+                errorTeks.textContent = 'Semua field wajib diisi.';
+                errorEl.classList.remove('hidden'); return;
+            }
+            if (username.length < 3) {
+                errorTeks.textContent = 'Username minimal 3 karakter.';
+                errorEl.classList.remove('hidden'); return;
+            }
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                errorTeks.textContent = 'Username hanya boleh huruf, angka, dan underscore.';
+                errorEl.classList.remove('hidden'); return;
+            }
+            if (password.length < 6) {
+                errorTeks.textContent = 'Password minimal 6 karakter.';
+                errorEl.classList.remove('hidden'); return;
+            }
+            if (password !== konfirm) {
+                errorTeks.textContent = 'Konfirmasi password tidak cocok.';
+                errorEl.classList.remove('hidden'); return;
+            }
+
+            btn.disabled  = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mendaftarkan...`;
+
+            try {
+                const res   = await fetch(API_REGISTER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, konfirmasi: konfirm })
+                });
+
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                const hasil = await res.json();
+
+                if (hasil.status === 'success') {
+                    localStorage.setItem('token_toko',    hasil.token);
+                    localStorage.setItem('username_toko', hasil.username);
+                    window.location.href = 'index.html';
+                } else {
+                    errorTeks.textContent = hasil.pesan || 'Registrasi gagal.';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorTeks.textContent = 'Koneksi ke server gagal. Periksa URL API.';
+                errorEl.classList.remove('hidden');
+                console.error('[Register]', err);
+            } finally {
+                btn.disabled  = false;
+                btn.innerHTML = `<i class="fa-solid fa-user-plus"></i> Daftar Sekarang`;
+            }
+        }
+
+        // ── Enter key support ──────────────────────────────
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Enter') return;
+            const loginAktif = document.getElementById('panel-login').classList.contains('aktif');
+            if (loginAktif) prosesLogin(); else prosesRegister();
+        });
+    </script>
+</body>
+</html>

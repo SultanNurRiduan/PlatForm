@@ -1,11 +1,14 @@
 {
     "name": "Aplikasi Toko Keren",
     "short_name": "AppToko",
-    "description": "Aplikasi pencatat barang PWA",
-    "start_url": "./index.html",
+    "description": "Aplikasi pencatat & manajemen barang berbasis PWA",
+    "start_url": "./login.html",
+    "scope": "./",
     "display": "standalone",
+    "orientation": "portrait-primary",
     "background_color": "#ffffff",
     "theme_color": "#10b981",
+    "categories": ["productivity", "business"],
     "icons": [
         {
             "src": "icons/icon-192x192.png",

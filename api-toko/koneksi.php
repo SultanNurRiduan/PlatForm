@@ -1,8 +1,9 @@
 <?php
+
 $host = "localhost";
-$user = "root";
-$pass = "root";
-$db   = "toko_db";
+$user = "root";        
+$pass = "root";        
+$db   = "toko_db";    
 
 $koneksi = mysqli_connect($host, $user, $pass, $db);
 
@@ -13,4 +14,6 @@ if (!$koneksi) {
         "pesan"  => "Koneksi database gagal: " . mysqli_connect_error()
     ]));
 }
+
+mysqli_set_charset($koneksi, "utf8mb4");
 ?>

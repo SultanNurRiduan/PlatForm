@@ -114,7 +114,6 @@
         </div>
     </div>
 
-    <!-- ===== PANEL REGISTER ===== -->
     <div id="panel-register" class="panel w-full max-w-sm relative z-10">
         <div class="card-wrap bg-white rounded-2xl overflow-hidden shadow-xl border border-slate-100">
 
@@ -178,18 +177,13 @@
     </div>
 
     <script>
-        // ============================================================
-        // CONFIG — Ganti dengan URL production saat deploy
-        // ============================================================
         const API_LOGIN    = 'http://platform.test:8080/api-toko/login.php';
         const API_REGISTER = 'http://platform.test:8080/api-toko/register.php';
 
-        // Jika sudah login, langsung ke index
         if (localStorage.getItem('token_toko')) {
             window.location.href = 'index.html';
         }
 
-        // ── Panel switching ────────────────────────────────
         function tampilPanel(nama) {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('aktif'));
             document.getElementById('panel-' + nama).classList.add('aktif');
@@ -200,7 +194,6 @@
             setTimeout(() => document.getElementById(focusId).focus(), 50);
         }
 
-        // ── Toggle show/hide password ──────────────────────
         function togglePass(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon  = document.getElementById(iconId);
@@ -210,7 +203,6 @@
                 : 'fa-solid fa-eye-slash';
         }
 
-        // ── LOGIN ──────────────────────────────────────────
         async function prosesLogin() {
             const username  = document.getElementById('login-username').value.trim();
             const password  = document.getElementById('login-password').value;
@@ -259,7 +251,6 @@
             }
         }
 
-        // ── REGISTER ───────────────────────────────────────
         async function prosesRegister() {
             const username  = document.getElementById('reg-username').value.trim();
             const password  = document.getElementById('reg-password').value;
@@ -273,7 +264,6 @@
             errorEl.classList.add('hidden');
             successEl.classList.add('hidden');
 
-            // Validasi sisi klien
             if (!username || !password || !konfirm) {
                 errorTeks.textContent = 'Semua field wajib diisi.';
                 errorEl.classList.remove('hidden'); return;
@@ -326,7 +316,6 @@
             }
         }
 
-        // ── Enter key support ──────────────────────────────
         document.addEventListener('keydown', e => {
             if (e.key !== 'Enter') return;
             const loginAktif = document.getElementById('panel-login').classList.contains('aktif');

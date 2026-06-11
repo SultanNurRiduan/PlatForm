@@ -3,12 +3,10 @@
 function cekToken(mysqli $koneksi): void {
     $headers = [];
 
-    // Ambil semua request headers (kompatibel Apache & Nginx/InfinityFree)
     if (function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
     }
 
-    // Normalisasi key header menjadi lowercase untuk perbandingan
     $headersLower = array_change_key_case($headers, CASE_LOWER);
 
     $token_dikirim = '';
@@ -17,7 +15,6 @@ function cekToken(mysqli $koneksi): void {
         $token_dikirim = trim($headersLower['authorization']);
     }
 
-    // Fallback: coba dari $_SERVER (beberapa server menaruh di sini)
     if ($token_dikirim === '' && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
         $token_dikirim = trim($_SERVER['HTTP_AUTHORIZATION']);
     }

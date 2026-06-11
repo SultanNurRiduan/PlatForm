@@ -2,133 +2,49 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aplikasi Toko</title>
-
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#10b981" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AppToko" />
-
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
-
-        @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .row-animate { animation: fadeSlideIn 0.4s ease both; }
-
-        @keyframes shimmer {
-            0%   { background-position: -700px 0; }
-            100% { background-position: 700px 0; }
-        }
-        .skeleton {
-            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-            background-size: 700px 100%;
-            animation: shimmer 1.4s infinite linear;
-            border-radius: 6px;
-            height: 18px;
-        }
-
+        @keyframes shimmer { 0% { background-position: -700px 0; } 100% { background-position: 700px 0; } }
+        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 700px 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; height: 18px; }
         tbody tr { transition: background 0.18s ease; }
         tbody tr:hover { background: #f0fdf4; }
-
-        .badge-harga {
-            display: inline-block;
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-            border-radius: 9999px;
-            padding: 2px 14px;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        .stat-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 20px 24px;
-            transition: box-shadow 0.2s, transform 0.2s;
-        }
-        .stat-card:hover {
-            box-shadow: 0 8px 24px rgba(16,185,129,0.12);
-            transform: translateY(-2px);
-        }
-
+        .badge-harga { display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 9999px; padding: 2px 14px; font-weight: 600; font-size: 0.85rem; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; transition: box-shadow 0.2s, transform 0.2s; }
+        .stat-card:hover { box-shadow: 0 8px 24px rgba(16,185,129,0.12); transform: translateY(-2px); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #a7f3d0; border-radius: 99px; }
-
-        /* ====== MODAL BASE ====== */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(15, 23, 42, 0.45);
-            backdrop-filter: blur(4px);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.25s ease;
-            z-index: 50;
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 50; }
         .modal-overlay.modal-open { opacity: 1; pointer-events: all; }
-
-        .modal-box {
-            background: white;
-            border-radius: 20px;
-            width: 100%; max-width: 440px;
-            margin: 0 16px;
-            overflow: hidden;
-            box-shadow: 0 24px 60px rgba(0,0,0,0.18);
-            transform: translateY(24px) scale(0.97);
-            transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
-        }
+        .modal-box { background: white; border-radius: 20px; width: 100%; max-width: 440px; margin: 0 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.18); transform: translateY(24px) scale(0.97); transition: transform 0.28s cubic-bezier(.34,1.56,.64,1); }
         .modal-overlay.modal-open .modal-box { transform: translateY(0) scale(1); }
-
         #modal-konfirmasi-overlay .modal-box { max-width: 380px; }
-        #modal-edit-overlay       { z-index: 55; }
+        #modal-edit-overlay { z-index: 55; }
         #modal-konfirmasi-overlay { z-index: 60; }
-
-        .input-field {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            color: #1e293b;
-            background: #f8fafc;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-            outline: none;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            box-sizing: border-box;
-        }
-        .input-field:focus {
-            border-color: #10b981;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
-        }
+        .input-field { width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; color: #1e293b; background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; outline: none; font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+        .input-field:focus { border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
         .input-field::placeholder { color: #94a3b8; }
-
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @keyframes toastOut {
-            from { opacity: 1; transform: translateX(-50%) translateY(0); }
-            to   { opacity: 0; transform: translateX(-50%) translateY(20px); }
-        }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(-50%) translateY(0); } to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
         .toast-show { animation: toastIn 0.3s ease both !important; }
         .toast-hide { animation: toastOut 0.3s ease both !important; }
-
-        /* Banner tamu */
-        #banner-tamu {
-            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-            border: 1px solid #a7f3d0;
-        }
+        #banner-tamu { background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; }
+        .input-file { width: 100%; font-size: 0.85rem; color: #64748b; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 8px; background: #f8fafc; cursor: pointer; transition: border-color 0.2s; box-sizing: border-box; }
+        .input-file:hover { border-color: #10b981; }
+        .input-file::file-selector-button { margin-right: 10px; padding: 5px 14px; border-radius: 8px; border: 0; background: #ecfdf5; color: #065f46; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; }
+        .input-file::file-selector-button:hover { background: #d1fae5; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -145,37 +61,22 @@
                     <p class="text-xs text-slate-400 leading-none">Manajemen Inventaris</p>
                 </div>
             </div>
-
             <div class="flex items-center gap-2">
-                <!-- Status badge -->
                 <div id="status-badge" class="flex items-center gap-2 text-xs text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
                     <i class="fa-solid fa-circle text-slate-300 fa-beat" style="font-size:8px;"></i>
                     <span>Memuat data...</span>
                 </div>
-
-                <!-- Info user — hanya tampil jika sudah login -->
                 <div id="info-user" class="hidden items-center gap-1.5 text-xs bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
                     <i class="fa-solid fa-user text-emerald-400" style="font-size:10px;"></i>
                     <span id="label-username" class="text-emerald-700 font-semibold">—</span>
                 </div>
-
-                <!-- Tombol Logout — hanya tampil jika sudah login -->
-                <button
-                    id="btn-logout"
-                    onclick="logout()"
-                    title="Keluar"
-                    class="hidden items-center gap-1.5 text-xs text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-full font-semibold transition-all active:scale-95"
-                >
+                <button id="btn-logout" onclick="logout()" title="Keluar"
+                    class="hidden items-center gap-1.5 text-xs text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-full font-semibold transition-all active:scale-95">
                     <i class="fa-solid fa-right-from-bracket" style="font-size:10px;"></i>
                     <span class="hidden sm:inline">Logout</span>
                 </button>
-
-                <!-- Tombol Login — hanya tampil jika belum login -->
-                <a
-                    id="btn-login"
-                    href="login.html"
-                    class="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold transition-all active:scale-95"
-                >
+                <a id="btn-login" href="login.html"
+                    class="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold transition-all active:scale-95">
                     <i class="fa-solid fa-right-to-bracket" style="font-size:10px;"></i>
                     <span class="hidden sm:inline">Login</span>
                 </a>
@@ -185,18 +86,19 @@
 
     <main class="max-w-5xl mx-auto px-6 py-8">
 
-        <!-- BANNER TAMU — hanya tampil jika belum login -->
         <div id="banner-tamu" class="hidden mb-6 rounded-2xl px-5 py-4 flex items-center gap-4">
             <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-circle-info text-emerald-500" style="font-size:18px;"></i>
             </div>
             <div class="flex-1">
                 <p class="text-sm font-bold text-emerald-800">Anda belum login</p>
-                <p class="text-xs text-emerald-600 mt-0.5">Data barang ditampilkan dalam mode baca saja. <a href="login.html" class="underline font-semibold hover:text-emerald-800">Login</a> untuk menambah, mengedit, atau menghapus barang.</p>
+                <p class="text-xs text-emerald-600 mt-0.5">Data barang ditampilkan dalam mode baca saja.
+                    <a href="login.html" class="underline font-semibold hover:text-emerald-800">Login</a>
+                    untuk menambah, mengedit, atau menghapus barang.
+                </p>
             </div>
         </div>
 
-        <!-- STATISTIK -->
         <div class="grid grid-cols-3 gap-4 mb-8">
             <div class="stat-card">
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
@@ -218,7 +120,6 @@
             </div>
         </div>
 
-        <!-- JUDUL + SEARCH + TOMBOL TAMBAH -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
             <div>
                 <h2 class="text-xl font-extrabold text-slate-800">Daftar Barang</h2>
@@ -227,59 +128,52 @@
             <div class="flex items-center gap-3">
                 <div class="relative w-full sm:w-56">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size:13px;"></i>
-                    <input
-                        id="input-cari"
-                        type="text"
-                        placeholder="Cari nama barang..."
-                        oninput="filterTabel()"
-                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
-                    />
+                    <input id="input-cari" type="text" placeholder="Cari nama barang..." oninput="filterTabel()"
+                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
                 </div>
-
-                <!-- Tombol Tambah — hanya tampil jika sudah login -->
-                <button
-                    id="btn-tambah"
-                    onclick="bukaModal()"
-                    class="hidden items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-all duration-150 whitespace-nowrap"
-                >
+                <button id="btn-tambah" onclick="bukaModal()"
+                    class="hidden items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-all duration-150 whitespace-nowrap">
                     <i class="fa-solid fa-plus" style="font-size:12px;"></i>
                     Tambah
                 </button>
             </div>
         </div>
 
-        <!-- TABEL -->
         <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
                         <th class="px-6 py-4 text-left font-semibold w-16">#</th>
+                        <th class="px-4 py-4 text-center font-semibold w-16">
+                            <i class="fa-solid fa-image mr-1 opacity-70"></i>Foto
+                        </th>
                         <th class="px-6 py-4 text-left font-semibold">
                             <i class="fa-solid fa-tag mr-1.5 opacity-70"></i>Nama Barang
                         </th>
                         <th class="px-6 py-4 text-center font-semibold">
                             <i class="fa-solid fa-money-bill-wave mr-1.5 opacity-70"></i>Harga
                         </th>
-                        <!-- Kolom Aksi hanya tampil jika login -->
                         <th id="th-aksi" class="hidden px-6 py-4 text-center font-semibold w-28">
                             <i class="fa-solid fa-gear mr-1.5 opacity-70"></i>Aksi
                         </th>
                     </tr>
                 </thead>
                 <tbody id="tabel-barang">
-                    <!-- Skeleton loader -->
                     <tr class="border-b border-slate-100">
                         <td class="px-6 py-4"><div class="skeleton w-6"></div></td>
+                        <td class="px-4 py-4"><div class="skeleton w-10 h-10 rounded-lg mx-auto"></div></td>
                         <td class="px-6 py-4"><div class="skeleton w-40"></div></td>
                         <td class="px-6 py-4 text-center"><div class="skeleton w-24 mx-auto"></div></td>
                     </tr>
                     <tr class="border-b border-slate-100">
                         <td class="px-6 py-4"><div class="skeleton w-6"></div></td>
+                        <td class="px-4 py-4"><div class="skeleton w-10 h-10 rounded-lg mx-auto"></div></td>
                         <td class="px-6 py-4"><div class="skeleton w-52"></div></td>
                         <td class="px-6 py-4 text-center"><div class="skeleton w-24 mx-auto"></div></td>
                     </tr>
                     <tr>
                         <td class="px-6 py-4"><div class="skeleton w-6"></div></td>
+                        <td class="px-4 py-4"><div class="skeleton w-10 h-10 rounded-lg mx-auto"></div></td>
                         <td class="px-6 py-4"><div class="skeleton w-36"></div></td>
                         <td class="px-6 py-4 text-center"><div class="skeleton w-24 mx-auto"></div></td>
                     </tr>
@@ -292,11 +186,8 @@
             </div>
         </div>
 
-        <!-- Pesan error -->
         <div id="pesan-error" class="hidden mt-6 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-5 text-sm">
-            <p class="font-bold mb-1">
-                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Gagal memuat data!
-            </p>
+            <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Gagal memuat data!</p>
             <p id="teks-error" class="text-red-500"></p>
             <p class="mt-2 text-xs text-red-400">
                 <i class="fa-solid fa-circle-info mr-1"></i>
@@ -306,13 +197,11 @@
 
     </main>
 
-    <!-- FOOTER -->
     <footer class="max-w-5xl mx-auto px-6 py-6 mt-4 border-t border-slate-200 text-center text-xs text-slate-400">
         <i class="fa-solid fa-store mr-1"></i>
         AppToko &mdash; Manajemen Inventaris &bull; 2025
     </footer>
 
-    <!-- ====== MODAL TAMBAH BARANG ====== -->
     <div id="modal-overlay" class="modal-overlay" onclick="tutupModalLuar(event)">
         <div class="modal-box">
             <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 flex items-center justify-between">
@@ -351,19 +240,26 @@
                         <i class="fa-solid fa-circle-exclamation mr-1"></i>Harga wajib diisi dan harus lebih dari 0.
                     </p>
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-image mr-1 text-emerald-400"></i>Foto Barang
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional, maks 2MB)</span>
+                    </label>
+                    <input type="file" id="modal-input-gambar" accept="image/jpeg,image/png,image/webp" class="input-file" />
+                </div>
             </div>
             <div class="px-6 pb-6 flex items-center gap-3">
                 <button onclick="tutupModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all">
                     Batal
                 </button>
-                <button id="modal-btn-simpan" onclick="simpanBarang()" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                <button id="modal-btn-simpan" onclick="simpanBarang()"
+                    class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i> Simpan
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ====== MODAL EDIT BARANG ====== -->
     <div id="modal-edit-overlay" class="modal-overlay" onclick="tutupModalEditLuar(event)">
         <div class="modal-box">
             <div class="bg-gradient-to-r from-sky-500 to-blue-500 px-6 py-5 flex items-center justify-between">
@@ -403,19 +299,29 @@
                         <i class="fa-solid fa-circle-exclamation mr-1"></i>Harga wajib diisi dan harus lebih dari 0.
                     </p>
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-image mr-1 text-sky-400"></i>Ganti Foto
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional, maks 2MB)</span>
+                    </label>
+                    <img id="edit-preview-gambar"
+                        class="hidden w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2"
+                        src="" alt="Foto saat ini" />
+                    <input type="file" id="edit-input-gambar" accept="image/jpeg,image/png,image/webp" class="input-file" />
+                </div>
             </div>
             <div class="px-6 pb-6 flex items-center gap-3">
                 <button onclick="tutupModalEdit()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all">
                     Batal
                 </button>
-                <button id="edit-btn-simpan" onclick="simpanEdit()" class="flex-1 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                <button id="edit-btn-simpan" onclick="simpanEdit()"
+                    class="flex-1 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i> Simpan
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ====== MODAL KONFIRMASI HAPUS ====== -->
     <div id="modal-konfirmasi-overlay" class="modal-overlay" onclick="tutupModalKonfirmasiLuar(event)">
         <div class="modal-box">
             <div class="px-6 pt-8 pb-4 text-center">
@@ -433,19 +339,15 @@
                 <button onclick="tutupModalKonfirmasi()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all">
                     Batal
                 </button>
-                <button
-                    id="konfirmasi-btn-hapus"
-                    data-konfirmasi-id=""
+                <button id="konfirmasi-btn-hapus" data-konfirmasi-id=""
                     onclick="eksekusiHapus(this.getAttribute('data-konfirmasi-id'))"
-                    class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2"
-                >
+                    class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-trash"></i> Ya, Hapus
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST -->
     <div id="toast" class="fixed bottom-6 z-[70] hidden" style="left:50%; transform:translateX(-50%);">
         <div id="toast-inner" class="flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold">
             <i id="toast-icon"></i>

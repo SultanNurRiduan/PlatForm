@@ -24,7 +24,6 @@ if (empty($username) || empty($password)) {
     exit();
 }
 
-// Gunakan prepared statement agar aman dari SQL injection
 $stmt = mysqli_prepare($koneksi, "SELECT id, username, password FROM users WHERE username = ?");
 if (!$stmt) {
     http_response_code(500);
@@ -39,16 +38,15 @@ $result = mysqli_stmt_get_result($stmt);
 if ($result && mysqli_num_rows($result) > 0) {
     $user = mysqli_fetch_assoc($result);
 
-    // Cek password — mendukung plain text (sesuai modul) maupun password_hash
     $passwordValid = false;
     if (password_verify($password, $user['password'])) {
-        $passwordValid = true;                 // hash bcrypt
+        $passwordValid = true;
     } elseif ($user['password'] === $password) {
-        $passwordValid = true;                 // plain text (sesuai modul)
+        $passwordValid = true;
     }
 
     if ($passwordValid) {
-        $token   = bin2hex(random_bytes(16));  // lebih aman dari md5(uniqid)
+        $token   = bin2hex(random_bytes(16));
         $user_id = $user['id'];
 
         $stmtUpdate = mysqli_prepare($koneksi, "UPDATE users SET token = ? WHERE id = ?");

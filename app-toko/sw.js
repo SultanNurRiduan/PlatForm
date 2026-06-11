@@ -7,9 +7,6 @@ const urlsToCache = [
     './manifest.json'
 ];
 
-// ============================================================
-// 1. INSTALL — Cache file-file statis
-// ============================================================
 self.addEventListener('install', event => {
     console.log('[SW] Install v4');
     event.waitUntil(
@@ -22,9 +19,6 @@ self.addEventListener('install', event => {
     );
 });
 
-// ============================================================
-// 2. ACTIVATE — Hapus cache versi lama
-// ============================================================
 self.addEventListener('activate', event => {
     console.log('[SW] Activate v4');
     event.waitUntil(
@@ -41,20 +35,15 @@ self.addEventListener('activate', event => {
     );
 });
 
-// ============================================================
-// 3. FETCH — Network First untuk API, Cache First untuk aset
-// ============================================================
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
     const url = event.request.url;
 
-    // Untuk request ke API → selalu ambil dari network (data fresh)
     if (url.includes('infinityfreeapp.com') || url.includes('api-toko')) {
         event.respondWith(
             fetch(event.request).catch(() => {
                 console.warn('[SW] API tidak tersedia (offline):', url);
-                // Kembalikan respons error JSON sederhana agar app tidak crash
                 return new Response(
                     JSON.stringify({ status: 'error', pesan: 'Anda sedang offline.' }),
                     { headers: { 'Content-Type': 'application/json' } }
@@ -64,7 +53,6 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Untuk CDN eksternal (Tailwind, FontAwesome, Google Fonts) → Network First
     if (url.includes('cdn.tailwindcss.com') || url.includes('fonts.googleapis.com') ||
         url.includes('cdnjs.cloudflare.com') || url.includes('fonts.gstatic.com')) {
         event.respondWith(
@@ -81,7 +69,6 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Untuk aset statis lokal → Cache First, fallback ke network
     event.respondWith(
         caches.match(event.request)
             .then(cached => {

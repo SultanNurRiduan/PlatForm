@@ -37,7 +37,6 @@ if ($password !== $konfirm) {
     echo json_encode(["status" => "error", "pesan" => "Konfirmasi password tidak cocok."]); exit();
 }
 
-// ── Cek apakah username sudah dipakai ────────────────────
 $stmtCek = mysqli_prepare($koneksi, "SELECT id FROM users WHERE username = ?");
 mysqli_stmt_bind_param($stmtCek, "s", $username);
 mysqli_stmt_execute($stmtCek);
@@ -49,9 +48,7 @@ if (mysqli_stmt_num_rows($stmtCek) > 0) {
 }
 mysqli_stmt_close($stmtCek);
 
-// ── Simpan user baru (password plain sesuai modul) ────────
-// Untuk keamanan produksi, gunakan: $passwordSimpan = password_hash($password, PASSWORD_DEFAULT);
-$passwordSimpan = $password;  // plain text sesuai modul praktikum
+$passwordSimpan = $password; 
 
 $stmtInsert = mysqli_prepare($koneksi, "INSERT INTO users (username, password) VALUES (?, ?)");
 if (!$stmtInsert) {

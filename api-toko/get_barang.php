@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 include "koneksi.php";
 /** @var mysqli $koneksi */
 
-$hasil = mysqli_query($koneksi, "SELECT id, nama_barang, harga FROM barang ORDER BY id DESC");
+$hasil = mysqli_query($koneksi, "SELECT id, nama_barang, harga, gambar FROM barang ORDER BY id DESC");
 
 if (!$hasil) {
     http_response_code(500);
@@ -23,10 +23,12 @@ if (!$hasil) {
 
 $data_barang = [];
 while ($baris = mysqli_fetch_assoc($hasil)) {
-    // Pastikan tipe data konsisten
     $baris['id']    = (int) $baris['id'];
     $baris['harga'] = (int) $baris['harga'];
-    $data_barang[]  = $baris;
+    if (empty($baris['gambar']) || $baris['gambar'] === '0') {
+        $baris['gambar'] = null;
+    }
+    $data_barang[] = $baris;
 }
 
 echo json_encode([

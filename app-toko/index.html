@@ -128,7 +128,7 @@
             <div class="flex items-center gap-3">
                 <div class="relative w-full sm:w-56">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size:13px;"></i>
-                    <input id="input-cari" type="text" placeholder="Cari nama barang..." oninput="filterTabel()"
+                    <input id="input-cari" type="text" placeholder="Cari nama barang..." onkeyup="filterTabel()"
                         class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
                 </div>
                 <button id="btn-tambah" onclick="bukaModal()"
@@ -183,6 +183,25 @@
                 <i class="fa-solid fa-list-ul mr-1"></i>
                 Menampilkan <span id="count-tampil" class="font-semibold text-slate-600">0</span> dari
                 <span id="count-total" class="font-semibold text-slate-600">0</span> barang
+            </div>
+        </div>
+
+        <!-- NAVIGASI HALAMAN (Prev/Next) -->
+        <div class="flex justify-between items-center mt-4 bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500" id="info-halaman">
+                Halaman 1 dari 1 (Total: 0 Data)
+            </div>
+            <div class="flex gap-2">
+                <button id="btn-prev" onclick="gantiHalaman(-1)"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled>
+                    <i class="fa-solid fa-chevron-left mr-1"></i>Mundur
+                </button>
+                <button id="btn-next" onclick="gantiHalaman(1)"
+                    class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled>
+                    Lanjut<i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
             </div>
         </div>
 

@@ -13,7 +13,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 include "koneksi.php";
 /** @var mysqli $koneksi */
 
-$hasil = mysqli_query($koneksi, "SELECT id, nama_barang, harga, gambar FROM barang ORDER BY id DESC");
+// 1. Tangkap parameter cari & page dari URL
+$cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+if ($page < 1) $page = 1;
+
+// 2. Tentukan jumlah data per halaman
+$limit  = 5;
+$offset = ($page - 1) * $limit;
+
+// 3. Hitung total seluruh data sesuai filter pencarian
+$query_total  = "SELECT COUNT(*) AS total FROM barang WHERE nama_barang LIKE '%$cari%'";
+$result_total = mysqli_query($koneksi, $query_total);
+
+if (!$result_total) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "Query total gagal: " . mysqli_error($koneksi)]);
+    exit();
+}
+
+$total_data    = (int) mysqli_fetch_assoc($result_total)['total'];
+$total_halaman = (int) ceil($total_data / $limit);
+if ($total_halaman < 1) $total_halaman = 1;
+
+// 4. Ambil data sesuai limit + offset + pencarian
+$query = "SELECT id, nama_barang, harga, gambar FROM barang
+          WHERE nama_barang LIKE '%$cari%'
+          ORDER BY id DESC
+          LIMIT $limit OFFSET $offset";
+$hasil = mysqli_query($koneksi, $query);
 
 if (!$hasil) {
     http_response_code(500);
@@ -31,9 +59,13 @@ while ($baris = mysqli_fetch_assoc($hasil)) {
     $data_barang[] = $baris;
 }
 
+// 5. Kembalikan JSON beserta metadata halaman
 echo json_encode([
-    "status"  => "success",
-    "message" => "Berhasil mengambil data.",
-    "data"    => $data_barang
+    "status"           => "success",
+    "message"          => "Berhasil mengambil data.",
+    "data"             => $data_barang,
+    "halaman_saat_ini" => $page,
+    "total_halaman"    => $total_halaman,
+    "total_data"       => $total_data
 ]);
 ?>

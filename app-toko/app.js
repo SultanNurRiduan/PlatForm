@@ -7,6 +7,11 @@ const API_EDIT   = `${API_BASE}/edit_barang.php`;
 const TOKEN    = localStorage.getItem('token_toko');
 const USERNAME = localStorage.getItem('username_toko');
 
+// State untuk search & pagination
+let halamanSaatIni    = 1;
+let totalHalamanGlobal = 1;
+let keywordPencarian  = "";
+
 document.addEventListener('DOMContentLoaded', () => {
     updateHeaderAuth();
     ambilDataBarang();
@@ -59,7 +64,8 @@ let dataBarangGlobal = [];
 
 async function ambilDataBarang() {
     try {
-        const response = await fetch(API_URL);
+        const urlAPI = `${API_URL}?cari=${encodeURIComponent(keywordPencarian)}&page=${halamanSaatIni}`;
+        const response = await fetch(urlAPI);
         if (!response.ok) throw new Error(`HTTP Error: Status ${response.status}`);
 
         const hasil = await response.json();
@@ -67,8 +73,9 @@ async function ambilDataBarang() {
             dataBarangGlobal = hasil.data;
             renderTabel(dataBarangGlobal);
             updateStatistik(dataBarangGlobal);
-            updateStatusBadge(true, dataBarangGlobal.length);
+            updateStatusBadge(true, hasil.total_data);
             document.getElementById('pesan-error').classList.add('hidden');
+            updateNavigasiHalaman(hasil);
         } else {
             throw new Error(hasil.message || hasil.pesan || 'Respons tidak valid.');
         }
@@ -79,17 +86,46 @@ async function ambilDataBarang() {
     }
 }
 
+function updateNavigasiHalaman(hasil) {
+    totalHalamanGlobal = hasil.total_halaman;
+    halamanSaatIni      = hasil.halaman_saat_ini;
+
+    const infoHalaman = document.getElementById('info-halaman');
+    const btnPrev      = document.getElementById('btn-prev');
+    const btnNext      = document.getElementById('btn-next');
+
+    if (infoHalaman) {
+        infoHalaman.innerHTML = `Halaman ${hasil.halaman_saat_ini} dari ${hasil.total_halaman} (Total: ${hasil.total_data} Data)`;
+    }
+    if (btnPrev) btnPrev.disabled = (halamanSaatIni <= 1);
+    if (btnNext) btnNext.disabled = (halamanSaatIni >= totalHalamanGlobal);
+}
+
+// Dipanggil saat onkeyup di kotak pencarian
+function filterTabel() {
+    keywordPencarian = document.getElementById('input-cari').value.trim();
+    halamanSaatIni = 1; // reset ke halaman 1 setiap kali keyword berubah
+    ambilDataBarang();
+}
+
+// Dipanggil saat klik tombol Mundur (-1) / Lanjut (1)
+function gantiHalaman(arah) {
+    const targetHalaman = halamanSaatIni + arah;
+    if (targetHalaman < 1 || targetHalaman > totalHalamanGlobal) return;
+    halamanSaatIni = targetHalaman;
+    ambilDataBarang();
+}
+
 function kompresGambar(file, maxSizeMB = 1.5) {
     return new Promise((resolve) => {
         const maxBytes = maxSizeMB * 1024 * 1024;
-        // Jika sudah kecil, langsung resolve
         if (file.size <= maxBytes) { resolve(file); return; }
 
         const reader = new FileReader();
-        reader.onerror = () => resolve(file); 
+        reader.onerror = () => resolve(file);
         reader.onload = (e) => {
             const img = new Image();
-            img.onerror = () => resolve(file); 
+            img.onerror = () => resolve(file);
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 let { width, height } = img;
@@ -111,7 +147,7 @@ function kompresGambar(file, maxSizeMB = 1.5) {
 
                 canvas.toBlob(
                     (blob) => {
-                        if (!blob) { resolve(file); return; } // fallback
+                        if (!blob) { resolve(file); return; }
                         const namaFile = file.name.replace(/\.[^.]+$/, '.jpg');
                         resolve(new File([blob], namaFile, { type: 'image/jpeg' }));
                     },
@@ -126,13 +162,12 @@ function kompresGambar(file, maxSizeMB = 1.5) {
 }
 
 function validasiFile(file) {
-    if (!file) return true; // tidak ada file = opsional, ok
+    if (!file) return true;
     const tipeOk = ['image/jpeg', 'image/png', 'image/webp'];
     if (!tipeOk.includes(file.type)) {
         tampilkanToast('error', 'Format gambar tidak didukung. Gunakan JPG, PNG, atau WEBP.');
         return false;
     }
-    // Cek ukuran sebelum kompres: maksimal 10MB
     if (file.size > 10 * 1024 * 1024) {
         tampilkanToast('error', 'Ukuran gambar terlalu besar (maks 10MB).');
         return false;
@@ -197,6 +232,7 @@ async function simpanBarang() {
             document.getElementById('modal-input-harga').value  = '';
             document.getElementById('modal-input-gambar').value = '';
             tampilkanToast('success', 'Barang berhasil ditambahkan!');
+            halamanSaatIni = 1; // barang baru muncul di atas (ORDER BY id DESC), balik ke hal. 1
             await ambilDataBarang();
         } else {
             tampilkanToast('error', hasil.pesan || 'Gagal menyimpan data.');
@@ -360,6 +396,10 @@ async function eksekusiHapus(id_target) {
 
         if (hasil.status === 'sukses') {
             tampilkanToast('success', 'Barang berhasil dihapus!');
+            // Jika halaman saat ini jadi kosong setelah hapus (mis. hapus item terakhir di halaman terakhir), mundur 1 halaman
+            if (dataBarangGlobal.length === 1 && halamanSaatIni > 1) {
+                halamanSaatIni -= 1;
+            }
             await ambilDataBarang();
         } else {
             tampilkanToast('error', hasil.pesan || 'Gagal menghapus data.');
@@ -525,19 +565,10 @@ function updateStatistik(data) {
     statMin.textContent   = fmt(Math.min(...hargaArr));
 }
 
-function filterTabel() {
-    const keyword     = document.getElementById('input-cari').value.toLowerCase().trim();
-    const hasilFilter = dataBarangGlobal.filter(b =>
-        b.nama_barang.toLowerCase().includes(keyword)
-    );
-    renderTabel(hasilFilter);
-    updateStatistik(hasilFilter);
-}
-
 function updateStatusBadge(berhasil, jumlah = 0) {
     const badge = document.getElementById('status-badge');
     if (berhasil) {
-        badge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400" style="font-size:10px;"></i><span class="text-emerald-600 font-medium">${jumlah} barang dimuat</span>`;
+        badge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400" style="font-size:10px;"></i><span class="text-emerald-600 font-medium">${jumlah} barang ditemukan</span>`;
         badge.className = 'flex items-center gap-2 text-xs bg-emerald-50 px-3 py-1.5 rounded-full';
     } else {
         badge.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-400" style="font-size:10px;"></i><span class="text-red-500 font-medium">Koneksi gagal</span>`;

@@ -12,6 +12,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- IMPORT PUSTAKA CHART.JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -21,7 +23,7 @@
         tbody tr { transition: background 0.18s ease; }
         tbody tr:hover { background: #f0fdf4; }
         .badge-harga { display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 9999px; padding: 2px 14px; font-weight: 600; font-size: 0.85rem; }
-        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; transition: box-shadow 0.2s, transform 0.2s; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 16px; transition: box-shadow 0.2s, transform 0.2s; }
         .stat-card:hover { box-shadow: 0 8px 24px rgba(16,185,129,0.12); transform: translateY(-2px); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -45,6 +47,8 @@
         .input-file:hover { border-color: #10b981; }
         .input-file::file-selector-button { margin-right: 10px; padding: 5px 14px; border-radius: 8px; border: 0; background: #ecfdf5; color: #065f46; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; }
         .input-file::file-selector-button:hover { background: #d1fae5; }
+        .btn-tipe-chart { color: #64748b; }
+        .btn-tipe-chart.aktif { background: white; color: #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -99,24 +103,55 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
             <div class="stat-card">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
-                    <i class="fa-solid fa-boxes-stacked mr-1 text-slate-300"></i>Total Barang
+                <p class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider sm:tracking-widest mb-0.5 sm:mb-1 truncate">
+                    <i class="fa-solid fa-boxes-stacked mr-1 text-slate-300"></i><span class="hidden sm:inline">Total </span>Barang
                 </p>
-                <p id="stat-total" class="text-3xl font-extrabold text-slate-800">—</p>
+                <p id="stat-total" class="text-lg sm:text-2xl md:text-3xl font-extrabold text-slate-800 truncate">—</p>
             </div>
             <div class="stat-card">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
-                    <i class="fa-solid fa-arrow-trend-up mr-1 text-emerald-300"></i>Harga Tertinggi
+                <p class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider sm:tracking-widest mb-0.5 sm:mb-1 truncate">
+                    <i class="fa-solid fa-arrow-trend-up mr-1 text-emerald-300"></i><span class="hidden sm:inline">Harga </span>Tertinggi
                 </p>
-                <p id="stat-max" class="text-3xl font-extrabold text-emerald-600">—</p>
+                <p id="stat-max" class="text-lg sm:text-2xl md:text-3xl font-extrabold text-emerald-600 truncate">—</p>
             </div>
             <div class="stat-card">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
-                    <i class="fa-solid fa-arrow-trend-down mr-1 text-sky-300"></i>Harga Terendah
+                <p class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider sm:tracking-widest mb-0.5 sm:mb-1 truncate">
+                    <i class="fa-solid fa-arrow-trend-down mr-1 text-sky-300"></i><span class="hidden sm:inline">Harga </span>Terendah
                 </p>
-                <p id="stat-min" class="text-3xl font-extrabold text-sky-600">—</p>
+                <p id="stat-min" class="text-lg sm:text-2xl md:text-3xl font-extrabold text-sky-600 truncate">—</p>
+            </div>
+        </div>
+
+        <!-- DASHBOARD GRAFIK (Chart.js) -->
+        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 sm:mb-8 w-full">
+            <div class="flex items-center justify-between flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <h2 class="text-base sm:text-xl font-extrabold text-slate-800 flex items-center gap-1.5 sm:gap-2">
+                    <i class="fa-solid fa-chart-column text-emerald-500 text-sm sm:text-base"></i>
+                    <span class="truncate">Top 5 Barang Termahal</span>
+                </h2>
+
+                <!-- TOMBOL PILIH JENIS GRAFIK -->
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                    <button onclick="gantiTipeChart('bar')" data-tipe-chart="bar"
+                        class="btn-tipe-chart flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-chart-bar sm:mr-1"></i><span class="hidden sm:inline">Batang</span>
+                    </button>
+                    <button onclick="gantiTipeChart('pie')" data-tipe-chart="pie"
+                        class="btn-tipe-chart flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-chart-pie sm:mr-1"></i><span class="hidden sm:inline">Lingkaran</span>
+                    </button>
+                    <button onclick="gantiTipeChart('doughnut')" data-tipe-chart="doughnut"
+                        class="btn-tipe-chart flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap">
+                        <i class="fa-regular fa-circle sm:mr-1"></i><span class="hidden sm:inline">Donat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kunci Container: tinggi lebih ringkas & tetap responsif -->
+            <div class="relative h-56 sm:h-72 w-full">
+                <canvas id="myChart"></canvas>
             </div>
         </div>
 

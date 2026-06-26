@@ -1,8 +1,9 @@
-const API_BASE   = 'http://platformV2.test:8080/api-toko';
-const API_URL    = `${API_BASE}/get_barang.php`;
-const API_TAMBAH = `${API_BASE}/tambah_barang.php`;
-const API_HAPUS  = `${API_BASE}/hapus_barang.php`;
-const API_EDIT   = `${API_BASE}/edit_barang.php`;
+const API_BASE      = 'http://platformV2.test:8080/api-toko';
+const API_URL       = `${API_BASE}/get_barang.php`;
+const API_TAMBAH    = `${API_BASE}/tambah_barang.php`;
+const API_HAPUS     = `${API_BASE}/hapus_barang.php`;
+const API_EDIT      = `${API_BASE}/edit_barang.php`;
+const API_STATISTIK = `${API_BASE}/statistik.php`;
 
 const TOKEN    = localStorage.getItem('token_toko');
 const USERNAME = localStorage.getItem('username_toko');
@@ -12,9 +13,15 @@ let halamanSaatIni    = 1;
 let totalHalamanGlobal = 1;
 let keywordPencarian  = "";
 
+// State untuk dashboard grafik
+let tipeChartAktif    = 'bar';  
+let dataChartTerakhir = null; 
+
 document.addEventListener('DOMContentLoaded', () => {
     updateHeaderAuth();
     ambilDataBarang();
+    renderDashboard();
+    document.querySelector('[data-tipe-chart="bar"]')?.classList.add('aktif');
 });
 
 function updateHeaderAuth() {
@@ -72,7 +79,6 @@ async function ambilDataBarang() {
         if (hasil.status === 'success') {
             dataBarangGlobal = hasil.data;
             renderTabel(dataBarangGlobal);
-            updateStatistik(dataBarangGlobal);
             updateStatusBadge(true, hasil.total_data);
             document.getElementById('pesan-error').classList.add('hidden');
             updateNavigasiHalaman(hasil);
@@ -84,6 +90,94 @@ async function ambilDataBarang() {
         updateStatusBadge(false);
         console.error('Gagal mengambil data:', error);
     }
+}
+
+// =====================================================
+// DASHBOARD: Statistik Global (Total/Max/Min) + Grafik Chart.js
+// Sumber data: statistik.php (dihitung MySQL dari SELURUH tabel,
+// bukan hanya dari data yang sedang tampil di halaman aktif)
+// =====================================================
+async function renderDashboard() {
+    try {
+        const response = await fetch(API_STATISTIK);
+        const json = await response.json();
+
+        if (json.status === 'success') {
+            // ---- 1. Update kartu Total / Harga Tertinggi / Harga Terendah ----
+            const fmt = (n) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
+            document.getElementById('stat-total').textContent = json.stats.total_barang;
+            document.getElementById('stat-max').textContent   = json.stats.harga_max !== null ? fmt(json.stats.harga_max) : '—';
+            document.getElementById('stat-min').textContent   = json.stats.harga_min !== null ? fmt(json.stats.harga_min) : '—';
+
+            // ---- 2. Simpan data chart ke cache, lalu gambar ----
+            dataChartTerakhir = json.chart_data;
+            gambarChart(tipeChartAktif);
+        }
+    } catch (error) {
+        console.error('Gagal memuat dashboard:', error);
+    }
+}
+
+// Melukis grafik sesuai tipe yang dipilih (bar/pie/doughnut).
+// Dipisah dari renderDashboard() agar ganti tipe grafik tidak perlu fetch ulang ke server.
+function gambarChart(tipe) {
+    if (!dataChartTerakhir) return;
+
+    const ctx = document.getElementById('myChart');
+
+    // BUG FIX: Ghosting Effect — hancurkan chart lama sebelum gambar ulang
+    let chartStatus = Chart.getChart('myChart');
+    if (chartStatus != undefined) {
+        chartStatus.destroy();
+    }
+
+    const warnaList = [
+        'rgba(16, 185, 129, 0.6)',  // hijau (emerald)
+        'rgba(59, 130, 246, 0.6)',  // biru
+        'rgba(234, 88, 12, 0.6)',   // orange
+        'rgba(236, 72, 153, 0.6)',  // pink
+        'rgba(139, 92, 246, 0.6)'   // ungu
+    ];
+
+    // Legend hanya relevan untuk pie/doughnut (bar sudah jelas dari sumbu X)
+    const tampilkanLegend = (tipe === 'pie' || tipe === 'doughnut');
+
+    new Chart(ctx, {
+        type: tipe, // 'bar' | 'pie' | 'doughnut'
+        data: {
+            labels: dataChartTerakhir.labels,
+            datasets: [{
+                label: 'Harga Barang (Rp)',
+                data: dataChartTerakhir.values,
+                backgroundColor: warnaList,
+                borderColor: tipe === 'bar' ? 'rgba(16, 185, 129, 1)' : '#ffffff',
+                borderWidth: tipe === 'bar' ? 1 : 2,
+                borderRadius: tipe === 'bar' ? 6 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // wajib false agar mengikuti tinggi container
+            plugins: {
+                legend: { display: tampilkanLegend, position: 'bottom' }
+            },
+            scales: tipe === 'bar'
+                ? { y: { beginAtZero: true } } // sumbu Y hanya untuk bar
+                : {}                            // pie/doughnut tidak pakai scales
+        }
+    });
+}
+
+// Dipanggil saat tombol jenis grafik diklik (lihat tombol di index.html)
+function gantiTipeChart(tipe) {
+    tipeChartAktif = tipe;
+
+    // Tandai tombol yang aktif secara visual
+    document.querySelectorAll('.btn-tipe-chart').forEach(btn => {
+        btn.classList.toggle('aktif', btn.getAttribute('data-tipe-chart') === tipe);
+    });
+
+    gambarChart(tipe); // redraw memakai data yang sudah di-cache, tanpa fetch ulang
 }
 
 function updateNavigasiHalaman(hasil) {
@@ -234,6 +328,7 @@ async function simpanBarang() {
             tampilkanToast('success', 'Barang berhasil ditambahkan!');
             halamanSaatIni = 1; // barang baru muncul di atas (ORDER BY id DESC), balik ke hal. 1
             await ambilDataBarang();
+            renderDashboard(); // refresh statistik & grafik
         } else {
             tampilkanToast('error', hasil.pesan || 'Gagal menyimpan data.');
         }
@@ -345,7 +440,7 @@ async function simpanEdit() {
             }
             tutupModalEdit();
             renderTabel(dataBarangGlobal);
-            updateStatistik(dataBarangGlobal);
+            renderDashboard(); // refresh statistik & grafik (harga bisa berubah, top 5 bisa berubah)
             tampilkanToast('success', 'Barang berhasil diperbarui!');
         } else {
             tampilkanToast('error', hasil.pesan || 'Gagal memperbarui data.');
@@ -401,6 +496,7 @@ async function eksekusiHapus(id_target) {
                 halamanSaatIni -= 1;
             }
             await ambilDataBarang();
+            renderDashboard(); // refresh statistik & grafik
         } else {
             tampilkanToast('error', hasil.pesan || 'Gagal menghapus data.');
             if (btnHapus) { btnHapus.disabled = false; btnHapus.innerHTML = `<i class="fa-solid fa-trash"></i>`; }
@@ -543,26 +639,6 @@ function renderTabel(data) {
     countTampil.textContent = data.length;
     countTotal.textContent  = dataBarangGlobal.length;
     footer.classList.remove('hidden');
-}
-
-function updateStatistik(data) {
-    const statTotal = document.getElementById('stat-total');
-    const statMax   = document.getElementById('stat-max');
-    const statMin   = document.getElementById('stat-min');
-
-    if (data.length === 0) {
-        statTotal.textContent = '0';
-        statMax.textContent   = '—';
-        statMin.textContent   = '—';
-        return;
-    }
-
-    const hargaArr = data.map(b => Number(b.harga));
-    const fmt = (n) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
-
-    statTotal.textContent = data.length;
-    statMax.textContent   = fmt(Math.max(...hargaArr));
-    statMin.textContent   = fmt(Math.min(...hargaArr));
 }
 
 function updateStatusBadge(berhasil, jumlah = 0) {

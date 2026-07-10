@@ -22,9 +22,30 @@ include "koneksi.php";
 $nama  = trim($_POST['nama_barang'] ?? '');
 $harga = intval($_POST['harga'] ?? 0);
 
+// P14: Data Hardware (opsional, boleh kosong)
+$kodeQr    = trim($_POST['kode_qr']   ?? '');
+$latitude  = trim($_POST['latitude']  ?? '');
+$longitude = trim($_POST['longitude'] ?? '');
+$kodeQr    = $kodeQr    === '' ? null : $kodeQr;
+$latitude  = $latitude  === '' ? null : $latitude;
+$longitude = $longitude === '' ? null : $longitude;
+
 if (empty($nama) || $harga <= 0) {
     http_response_code(400);
     echo json_encode(["status" => "error", "pesan" => "Nama dan harga wajib diisi."]); exit();
+}
+
+// P14: cek duplikat kode_qr biar tidak dobel
+if ($kodeQr !== null) {
+    $cekStmt = mysqli_prepare($koneksi, "SELECT id FROM barang WHERE kode_qr = ? LIMIT 1");
+    mysqli_stmt_bind_param($cekStmt, "s", $kodeQr);
+    mysqli_stmt_execute($cekStmt);
+    mysqli_stmt_store_result($cekStmt);
+    if (mysqli_stmt_num_rows($cekStmt) > 0) {
+        http_response_code(409);
+        echo json_encode(["status" => "error", "pesan" => "Kode QR sudah terdaftar pada barang lain."]); exit();
+    }
+    mysqli_stmt_close($cekStmt);
 }
 
 // Cek error upload
@@ -72,16 +93,10 @@ if (!empty($_FILES['gambar']['name']) && $_FILES['gambar']['error'] === UPLOAD_E
     }
 }
 
-// FIX: pisah query ada/tidak ada gambar agar NULL murni tersimpan di DB
-if ($gambar !== null) {
-    $stmt = mysqli_prepare($koneksi,
-        "INSERT INTO barang (nama_barang, harga, gambar) VALUES (?, ?, ?)");
-    mysqli_stmt_bind_param($stmt, "sis", $nama, $harga, $gambar);
-} else {
-    $stmt = mysqli_prepare($koneksi,
-        "INSERT INTO barang (nama_barang, harga, gambar) VALUES (?, ?, NULL)");
-    mysqli_stmt_bind_param($stmt, "si", $nama, $harga);
-}
+// P14: INSERT dengan kode_qr, latitude, longitude
+$stmt = mysqli_prepare($koneksi,
+    "INSERT INTO barang (nama_barang, harga, gambar, kode_qr, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)");
+mysqli_stmt_bind_param($stmt, "sissss", $nama, $harga, $gambar, $kodeQr, $latitude, $longitude);
 
 if (!mysqli_stmt_execute($stmt)) {
     if ($gambar && file_exists(__DIR__ . '/uploads/' . $gambar)) {

@@ -29,9 +29,31 @@ $id    = intval($_POST['id'] ?? 0);
 $nama  = trim($_POST['nama_barang'] ?? '');
 $harga = intval($_POST['harga'] ?? 0);
 
+// P14: Data Hardware (opsional, boleh kosong)
+$kodeQr    = trim($_POST['kode_qr']   ?? '');
+$latitude  = trim($_POST['latitude']  ?? '');
+$longitude = trim($_POST['longitude'] ?? '');
+$kodeQr    = $kodeQr    === '' ? null : $kodeQr;
+$latitude  = $latitude  === '' ? null : $latitude;
+$longitude = $longitude === '' ? null : $longitude;
+
 if ($id <= 0 || empty($nama) || $harga <= 0) {
     http_response_code(400);
     echo json_encode(["status" => "error", "pesan" => "Data tidak valid."]); exit();
+}
+
+// P14: cek duplikat kode_qr (kecuali milik barang ini sendiri)
+if ($kodeQr !== null) {
+    $cekStmt = mysqli_prepare($koneksi, "SELECT id FROM barang WHERE kode_qr = ? AND id != ? LIMIT 1");
+    mysqli_stmt_bind_param($cekStmt, "si", $kodeQr, $id);
+    mysqli_stmt_execute($cekStmt);
+    mysqli_stmt_store_result($cekStmt);
+    if (mysqli_stmt_num_rows($cekStmt) > 0) {
+        mysqli_stmt_close($cekStmt);
+        http_response_code(409);
+        echo json_encode(["status" => "error", "pesan" => "Kode QR sudah dipakai barang lain."]); exit();
+    }
+    mysqli_stmt_close($cekStmt);
 }
 
 // Cek error upload
@@ -79,8 +101,7 @@ if (!empty($_FILES['gambar']['name']) && $_FILES['gambar']['error'] === UPLOAD_E
     }
 }
 
-// FIX: hanya UPDATE kolom gambar jika ada file baru
-// Jika tidak ada file baru, biarkan gambar lama di DB tidak berubah
+// P14: UPDATE query menyertakan kode_qr, latitude, longitude
 if ($gambar_baru !== null) {
     // Ada gambar baru: hapus gambar lama dulu
     $res_lama = mysqli_query($koneksi, "SELECT gambar FROM barang WHERE id = " . $id);
@@ -95,13 +116,13 @@ if ($gambar_baru !== null) {
     }
 
     $stmt = mysqli_prepare($koneksi,
-        "UPDATE barang SET nama_barang = ?, harga = ?, gambar = ? WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, "sisi", $nama, $harga, $gambar_baru, $id);
+        "UPDATE barang SET nama_barang = ?, harga = ?, gambar = ?, kode_qr = ?, latitude = ?, longitude = ? WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "sisssi", $nama, $harga, $gambar_baru, $kodeQr, $latitude, $longitude, $id);
 } else {
-    // Tidak ada gambar baru: hanya update nama dan harga, gambar TIDAK disentuh
+    // Tidak ada gambar baru: gambar TIDAK disentuh
     $stmt = mysqli_prepare($koneksi,
-        "UPDATE barang SET nama_barang = ?, harga = ? WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, "sii", $nama, $harga, $id);
+        "UPDATE barang SET nama_barang = ?, harga = ?, kode_qr = ?, latitude = ?, longitude = ? WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "sisssi", $nama, $harga, $kodeQr, $latitude, $longitude, $id);
 }
 
 if (!mysqli_stmt_execute($stmt)) {

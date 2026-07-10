@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <!-- IMPORT PUSTAKA CHART.JS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- P14: IMPORT PUSTAKA QR SCANNER -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -129,6 +131,8 @@
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
             transform: translateY(24px) scale(0.97);
             transition: transform 0.28s cubic-bezier(.34, 1.56, .64, 1);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-overlay.modal-open .modal-box {
@@ -145,6 +149,11 @@
 
         #modal-konfirmasi-overlay {
             z-index: 60;
+        }
+
+        /* P14: modal scanner di atas semua modal lain */
+        #modal-qr-scan-overlay {
+            z-index: 65;
         }
 
         .input-field {
@@ -251,6 +260,13 @@
             background: white;
             color: #059669;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* P14: kotak preview kamera QR */
+        #qr-reader-main video,
+        #modal-form-reader video,
+        #edit-form-reader video {
+            border-radius: 12px;
         }
     </style>
 </head>
@@ -372,13 +388,19 @@
                 <h2 class="text-xl font-extrabold text-slate-800">Daftar Barang</h2>
                 <p class="text-sm text-slate-400 mt-0.5">Data langsung dari Backend API</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
                 <div class="relative w-full sm:w-56">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                         style="font-size:13px;"></i>
-                    <input id="input-cari" type="text" placeholder="Cari nama barang..." onkeyup="filterTabel()"
+                    <input id="input-cari" type="text" placeholder="Cari nama/kode barang..." onkeyup="filterTabel()"
                         class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
                 </div>
+                <!-- P14: Tombol Scan QR -->
+                <button onclick="bukaModalQrScan('search')" title="Cari barang via scan QR"
+                    class="flex items-center gap-2 bg-white hover:bg-slate-50 active:scale-95 text-slate-600 text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 shadow-sm transition-all duration-150 whitespace-nowrap">
+                    <i class="fa-solid fa-qrcode text-emerald-500" style="font-size:13px;"></i>
+                    Scan QR
+                </button>
                 <button id="btn-tambah" onclick="bukaModal()"
                     class="hidden items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-all duration-150 whitespace-nowrap">
                     <i class="fa-solid fa-plus" style="font-size:12px;"></i>
@@ -406,6 +428,10 @@
                         <th class="px-6 py-4 text-center font-semibold">
                             <i class="fa-solid fa-money-bill-wave mr-1.5 opacity-70"></i>Harga
                         </th>
+                        <!-- P14: Kolom Lokasi -->
+                        <th class="px-6 py-4 text-center font-semibold">
+                            <i class="fa-solid fa-location-dot mr-1.5 opacity-70"></i>Lokasi
+                        </th>
                         <th id="th-aksi" class="hidden px-6 py-4 text-center font-semibold w-28">
                             <i class="fa-solid fa-gear mr-1.5 opacity-70"></i>Aksi
                         </th>
@@ -425,6 +451,9 @@
                         <td class="px-6 py-4 text-center">
                             <div class="skeleton w-24 mx-auto"></div>
                         </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="skeleton w-16 mx-auto"></div>
+                        </td>
                     </tr>
                     <tr class="border-b border-slate-100">
                         <td class="px-6 py-4">
@@ -439,6 +468,9 @@
                         <td class="px-6 py-4 text-center">
                             <div class="skeleton w-24 mx-auto"></div>
                         </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="skeleton w-16 mx-auto"></div>
+                        </td>
                     </tr>
                     <tr>
                         <td class="px-6 py-4">
@@ -452,6 +484,9 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="skeleton w-24 mx-auto"></div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="skeleton w-16 mx-auto"></div>
                         </td>
                     </tr>
                 </tbody>
@@ -498,8 +533,77 @@
 
     <footer class="max-w-5xl mx-auto px-6 py-6 mt-4 border-t border-slate-200 text-center text-xs text-slate-400">
         <i class="fa-solid fa-store mr-1"></i>
-        AppToko &mdash; Manajemen Inventaris &bull; 2025
+        AppToko &mdash; Manajemen Inventaris &bull; 2026
     </footer>
+
+    <!-- P14: MODAL QR SCANNER (Smart QR Gateway) -->
+    <div id="modal-qr-scan-overlay" class="modal-overlay" onclick="tutupModalQrScanLuar(event)">
+        <div class="modal-box">
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-qrcode text-white" style="font-size:15px;"></i>
+                    </div>
+                    <div>
+                        <h2 id="qr-modal-title" class="text-white font-extrabold text-base leading-tight">QR Scanner</h2>
+                        <p id="qr-modal-hint" class="text-emerald-100 text-xs">Arahkan kamera ke kode QR barang</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalQrScan()"
+                    class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div id="qr-reader-main" class="rounded-xl overflow-hidden"></div>
+
+                <div id="qr-status-box" class="hidden space-y-3">
+                    <div class="text-center">
+                        <span class="inline-block text-xs font-mono bg-slate-100 text-slate-600 px-3 py-1 rounded-full" id="qr-scanned-text"></span>
+                    </div>
+
+                    <!-- State 1: Loading -->
+                    <div id="qr-state-loading" class="hidden items-center justify-center gap-2 text-sm text-slate-500 py-3">
+                        <i class="fa-solid fa-spinner fa-spin text-emerald-500"></i> Memeriksa database...
+                    </div>
+
+                    <!-- State 2: Ditemukan -->
+                    <div id="qr-state-found" class="hidden space-y-3">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                            <p class="text-emerald-700 font-bold text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> Barang Ditemukan!
+                            </p>
+                            <p id="qr-found-nama" class="text-slate-700 font-semibold text-sm mt-1"></p>
+                            <p id="qr-found-harga" class="text-emerald-600 text-sm"></p>
+                        </div>
+                        <button onclick="eksekusiQrFound()"
+                            class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-table-list"></i> Tampilkan di Tabel
+                        </button>
+                    </div>
+
+                    <!-- State 3: Belum Ada -->
+                    <div id="qr-state-notfound" class="hidden space-y-3">
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                            <p class="text-amber-700 font-bold text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-box-open"></i> Belum terdaftar
+                            </p>
+                            <p class="text-amber-600 text-xs mt-1">Kode QR ini belum ada di database.</p>
+                        </div>
+                        <button onclick="eksekusiQrTambah()"
+                            class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Tambah Barang Baru
+                        </button>
+                    </div>
+
+                    <button onclick="resetQrScanner()"
+                        class="w-full py-2 rounded-xl border border-slate-200 text-slate-500 text-xs font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> Scan Ulang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-overlay" class="modal-overlay" onclick="tutupModalLuar(event)">
         <div class="modal-box">
@@ -549,6 +653,41 @@
                     </label>
                     <input type="file" id="modal-input-gambar" accept="image/jpeg,image/png,image/webp"
                         class="input-file" />
+                </div>
+
+                <!-- P14: Kode QR -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-qrcode mr-1 text-emerald-400"></i>Kode QR / Barcode
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional)</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="modal-input-kode-qr" type="text" placeholder="Scan kamera atau ketik manual"
+                            class="input-field flex-1" />
+                        <button type="button" onclick="toggleFormScanner('modal')" title="Scan dengan kamera"
+                            class="w-11 h-11 flex-shrink-0 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-600 flex items-center justify-center transition">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                    </div>
+                    <div id="modal-form-reader" class="hidden mt-2 rounded-xl overflow-hidden border border-slate-200"></div>
+                </div>
+
+                <!-- P14: GPS Lokasi -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-location-dot mr-1 text-emerald-400"></i>Titik Lokasi Gudang
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional)</span>
+                    </label>
+                    <div class="flex gap-2 mb-2">
+                        <input id="modal-input-latitude" type="text" placeholder="Latitude" readonly
+                            class="input-field text-xs" />
+                        <input id="modal-input-longitude" type="text" placeholder="Longitude" readonly
+                            class="input-field text-xs" />
+                    </div>
+                    <button type="button" id="modal-btn-gps" onclick="dapatkanLokasi('modal')"
+                        class="w-full py-2 rounded-xl border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs"></i> Lacak GPS Saya
+                    </button>
                 </div>
             </div>
             <div class="px-6 pb-6 flex items-center gap-3">
@@ -616,6 +755,41 @@
                         alt="Foto saat ini" />
                     <input type="file" id="edit-input-gambar" accept="image/jpeg,image/png,image/webp"
                         class="input-file" />
+                </div>
+
+                <!-- P14: Kode QR -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-qrcode mr-1 text-sky-400"></i>Kode QR / Barcode
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional)</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="edit-input-kode-qr" type="text" placeholder="Scan kamera atau ketik manual"
+                            class="input-field flex-1" />
+                        <button type="button" onclick="toggleFormScanner('edit')" title="Scan dengan kamera"
+                            class="w-11 h-11 flex-shrink-0 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-600 flex items-center justify-center transition">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                    </div>
+                    <div id="edit-form-reader" class="hidden mt-2 rounded-xl overflow-hidden border border-slate-200"></div>
+                </div>
+
+                <!-- P14: GPS Lokasi -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-location-dot mr-1 text-sky-400"></i>Titik Lokasi Gudang
+                        <span class="text-slate-400 font-normal normal-case ml-1">(opsional)</span>
+                    </label>
+                    <div class="flex gap-2 mb-2">
+                        <input id="edit-input-latitude" type="text" placeholder="Latitude" readonly
+                            class="input-field text-xs" />
+                        <input id="edit-input-longitude" type="text" placeholder="Longitude" readonly
+                            class="input-field text-xs" />
+                    </div>
+                    <button type="button" id="edit-btn-gps" onclick="dapatkanLokasi('edit')"
+                        class="w-full py-2 rounded-xl border border-sky-200 text-sky-600 text-sm font-semibold hover:bg-sky-50 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs"></i> Lacak GPS Saya
+                    </button>
                 </div>
             </div>
             <div class="px-6 pb-6 flex items-center gap-3">
